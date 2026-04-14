@@ -140,3 +140,21 @@ app.listen(PORT, () => {
   console.log(`\n🚀 Client  → http://localhost:${PORT}`);
   console.log(`📊 Admin   → http://localhost:${PORT}/admin\n`);
 });
+const express = require('express');
+const path = require('path');
+const app = express();
+
+// 1. إخبار السيرفر بمكان الملفات الثابتة (HTML, CSS, JS)
+// إذا كانت ملفاتك في المجلد الرئيسي مباشرة، اتركها هكذا:
+app.use(express.static(__dirname));
+
+// 2. توجيه المسار الرئيسي "/" لفتح ملف index.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// 3. تأكد من استخدام المنفذ الذي يوفره Railway
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
