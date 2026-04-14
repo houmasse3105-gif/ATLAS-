@@ -1,0 +1,17 @@
+{
+  "name": "atlas-water-solutions",
+  "version": "2.0.0",
+  "description": "Atlas Water Solutions — Professional Service Booking System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "npm rebuild better-sqlite3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "express": "^4.18.2"
+  }
+}
