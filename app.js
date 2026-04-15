@@ -1,5 +1,7 @@
 /* ═══════════════════════════════════════════
-   Atlas Water Solutions — app.js v2
+   Atlas Water Solutions — app.js
+   يعمل مع السيرفر على localhost:3000
+   أو بدونه (وضع demo)
 ═══════════════════════════════════════════ */
 
 const API = window.location.hostname === 'localhost'
@@ -7,14 +9,20 @@ const API = window.location.hostname === 'localhost'
   : window.location.origin;
 
 /* ════════════════════════════════════════
-   NAVBAR scroll effect
+   Pipeline bars animation on load
 ════════════════════════════════════════ */
-window.addEventListener('scroll', () => {
-  document.querySelector('.navbar')?.classList.toggle('scrolled', window.scrollY > 20);
-}, { passive: true });
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    [['hb1','94%'],['hb2','84%'],['hb3','97%']].forEach(([id,w]) => {
+      const b = document.getElementById(id);
+      if (b) b.style.width = w;
+    });
+  }, 500);
+  checkReveal();
+});
 
 /* ════════════════════════════════════════
-   Scroll-reveal
+   Scroll reveal
 ════════════════════════════════════════ */
 function checkReveal() {
   document.querySelectorAll('.reveal:not(.visible)').forEach(el => {
@@ -25,36 +33,17 @@ function checkReveal() {
 window.addEventListener('scroll', checkReveal, { passive: true });
 
 /* ════════════════════════════════════════
-   Pipeline bars animation
-════════════════════════════════════════ */
-function initBars() {
-  setTimeout(() => {
-    [['hb1','94%'],['hb2','84%'],['hb3','97%']].forEach(([id,w]) => {
-      const b = document.getElementById(id);
-      if (b) b.style.width = w;
-    });
-  }, 600);
-}
-
-/* ════════════════════════════════════════
-   Smooth scroll to section
-════════════════════════════════════════ */
-function scrollTo(id) {
-  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-}
-
-/* ════════════════════════════════════════
    Pre-fill service from card click
 ════════════════════════════════════════ */
 function bookService(service) {
   const sel = document.getElementById('f-service');
   if (sel) sel.value = service;
-  scrollTo('booking');
+  document.getElementById('booking').scrollIntoView({ behavior: 'smooth' });
   setTimeout(() => document.getElementById('f-name')?.focus(), 600);
 }
 
 /* ════════════════════════════════════════
-   BOOKING FORM — Submit
+   FORM SUBMIT
 ════════════════════════════════════════ */
 async function submitForm() {
   const name    = document.getElementById('f-name')?.value.trim();
@@ -62,12 +51,11 @@ async function submitForm() {
   const service = document.getElementById('f-service')?.value;
   const note    = document.getElementById('f-note')?.value.trim();
 
-  // Inline validation
   clearErrors();
   let valid = true;
-  if (!name)    { showError('f-name',    'Please enter your full name');   valid = false; }
+  if (!name)    { showError('f-name',    'Please enter your full name');    valid = false; }
   if (!phone)   { showError('f-phone',   'Please enter your phone number'); valid = false; }
-  if (!service) { showError('f-service', 'Please select a service');        valid = false; }
+  if (!service) { showError('f-service', 'Please select a service');         valid = false; }
   if (!valid) return;
 
   const btn = document.getElementById('submit-btn');
@@ -83,18 +71,23 @@ async function submitForm() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
 
-    // Clear form
     ['f-name','f-phone','f-note'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
     document.getElementById('f-service').value = '';
 
-    // Show success modal
     showSuccessModal(data.request_code, service);
 
   } catch (e) {
-    showToast('Could not reach server. Is server.js running?', '#EF4444');
+    /* Demo mode — يعمل بدون سيرفر */
+    if (e.message === 'Failed to fetch' || e instanceof TypeError) {
+      const demoCode = 'ATX-' + Math.floor(10000 + Math.random() * 90000);
+      showSuccessModal(demoCode, service);
+      showToast('Demo mode — connect server for real data', '#F59E0B');
+    } else {
+      showToast('Error: ' + e.message, '#EF4444');
+    }
   } finally {
     btn.disabled = false;
     btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Book Now`;
@@ -113,7 +106,6 @@ function showError(fieldId, msg) {
   if (!hint || !hint.classList.contains('field-error')) {
     hint = document.createElement('span');
     hint.className = 'field-error';
-    hint.style.cssText = 'font-size:12px;color:#EF4444;margin-top:4px;display:block;';
     el.insertAdjacentElement('afterend', hint);
   }
   hint.textContent = msg;
@@ -135,7 +127,6 @@ function showSuccessModal(code, service) {
   document.getElementById('modal-service').textContent = service;
   document.getElementById('modal').classList.add('open');
 }
-
 function closeModal() {
   document.getElementById('modal').classList.remove('open');
 }
@@ -144,9 +135,8 @@ function closeModal() {
    ORDER TRACKING
 ════════════════════════════════════════ */
 async function trackOrder() {
-  const input = document.getElementById('track-input');
-  const code  = input?.value.trim().toUpperCase();
-
+  const input   = document.getElementById('track-input');
+  const code    = input?.value.trim().toUpperCase();
   const resultEl = document.getElementById('track-result');
   const errorEl  = document.getElementById('track-error');
   resultEl.classList.remove('show');
@@ -167,11 +157,11 @@ async function trackOrder() {
       errorEl.classList.add('show');
       return;
     }
-
     renderTrackResult(data.request);
 
   } catch {
-    errorEl.textContent = 'Could not reach server. Make sure server.js is running.';
+    /* Demo mode */
+    errorEl.textContent = 'Server not running — start server.js to enable real tracking.';
     errorEl.classList.add('show');
   } finally {
     btn.textContent = 'Track';
@@ -182,35 +172,31 @@ async function trackOrder() {
 function renderTrackResult(r) {
   document.getElementById('track-code').textContent    = r.request_code;
   document.getElementById('track-service').textContent = r.service;
-  document.getElementById('track-date').textContent    = new Date(r.created_at).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+  document.getElementById('track-date').textContent    =
+    new Date(r.created_at).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
 
-  // Badge
   const badgeEl = document.getElementById('track-badge');
   const labels  = { new:'New', in_progress:'In Progress', done:'Completed', cancelled:'Cancelled' };
-  badgeEl.className    = `badge badge-${r.status}`;
-  badgeEl.textContent  = labels[r.status] || r.status;
+  badgeEl.className   = `badge badge-${r.status}`;
+  badgeEl.textContent = labels[r.status] || r.status;
 
-  // Timeline
   const steps = ['new','in_progress','done'];
   const si    = steps.indexOf(r.status);
   steps.forEach((s, i) => {
     const step = document.getElementById(`tl-${s}`);
     if (!step) return;
     step.classList.remove('done','active');
-    if (i < si || r.status === 'done')      step.classList.add('done');
+    if (i < si || r.status === 'done')       step.classList.add('done');
     else if (i === si && r.status !== 'done') step.classList.add('active');
   });
 
   document.getElementById('track-result').classList.add('show');
 }
 
-/* Allow Enter key on tracking input */
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('track-input')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') trackOrder();
   });
-  initBars();
-  checkReveal();
 });
 
 /* ════════════════════════════════════════
@@ -223,8 +209,3 @@ function showToast(msg, color = '#10B981') {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3500);
 }
-
-/* Spin animation for loading state */
-const style = document.createElement('style');
-style.textContent = `.spin { animation: spin .8s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`;
-document.head.appendChild(style);
